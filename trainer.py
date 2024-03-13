@@ -4,10 +4,15 @@ import utils_data as ut
 import matplotlib.pyplot as plt
 from datetime import date
 import os
+import numpy as np
+import pandas as pd
 
 def train(model, tokenizer, train_json, test_json, classes, 
           n_data, batch_size, seed, max_length, class_weights: list, lr, n_epochs,
-          plot=True, save_model=True):
+          plot=True, save_model=True, save_results=True):
+    folder = f'{date.today()}_n_{n_data}_b_{batch_size}_s_{seed}_l_{max_length}_w_{class_weights}_l_{lr}'
+    os.makedirs(f'saved_models/{folder}', exist_ok=True)
+
     data_batches, target_batches, att_mask_batches = ut.preprocess(json_file=train_json, classes=classes, tokenizer=tokenizer, 
                                                                    n_data=n_data, batch_size=batch_size, max_length=max_length, test=False)
     weights = torch.tensor(class_weights)
@@ -51,12 +56,19 @@ def train(model, tokenizer, train_json, test_json, classes,
         print('\n')
         train_losses.append(train_loss_batch_mean)
         train_accuracies.append(train_accuracy_batch_mean)
-        if save_model:
-            folder = f'{date.today()}_n_{n_data}_b_{batch_size}_s_{seed}_l_{max_length}_w_{class_weights}_l_{lr}'
-            os.makedirs(f'saved_models/{folder}', exist_ok=True)
+
+        if save_model:             
             model_name = f'{folder}/{folder}_e_{epoch}'
             torch.save(model.state_dict(), f"saved_models/{model_name}.pt")
 
+    if save_results:
+        train_losses_np = np.array(train_losses)
+        train_accuracies_np = np.array(train_accuracies)
+        test_accuracies_np = np.array(test_accuracies)
+        data = np.vstack((train_losses_np, train_accuracies_np, test_accuracies_np)).T
+        data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy', 'test_accuracy'])
+        data_df.to_csv(f'saved_models/{folder}/results.csv', index=False)
+    
     if plot:
         fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(4, 4))
         fig.tight_layout()

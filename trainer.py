@@ -64,9 +64,13 @@ def train(model, tokenizer, train_json, test_json, classes,
     if save_results:
         train_losses_np = np.array(train_losses)
         train_accuracies_np = np.array(train_accuracies)
-        test_accuracies_np = np.array(test_accuracies)
-        data = np.vstack((train_losses_np, train_accuracies_np, test_accuracies_np)).T
-        data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy', 'test_accuracy'])
+        if test_json != None:
+            test_accuracies_np = np.array(test_accuracies)
+            data = np.vstack((train_losses_np, train_accuracies_np, test_accuracies_np)).T
+            data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy', 'test_accuracy'])
+        else:
+            data = np.vstack((train_losses_np, train_accuracies_np)).T
+            data_df = pd.DataFrame(data, columns=['train_loss', 'train_accuracy'])
         data_df.to_csv(f'saved_models/{folder}/results.csv', index=False)
     
     if plot:
